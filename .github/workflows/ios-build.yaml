@@ -1,0 +1,29 @@
+name: Build iOS App
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14 # Uses Apple Silicon M1/M2 macOS runners in the cloud
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode Version
+        run: sudo xcode-select -switch /Applications/Xcode_15.4.app
+
+      - name: Create Xcode Project Structure
+        run: |
+          mkdir -p build
+          # Generates the iOS build bundle
+          swiftc -emit-executable FinanceApp/*.swift -target arm64-apple-ios17.0-simulator -o build/FinanceApp
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS-FinanceApp-Build
+          path: build/
