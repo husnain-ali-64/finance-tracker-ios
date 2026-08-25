@@ -7,23 +7,36 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14 # Uses Apple Silicon M1/M2 macOS runners in the cloud
+    runs-on: macos-14
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Select Xcode Version
-        run: sudo xcode-select -switch /Applications/Xcode_15.4.app
-
-      - name: Create Xcode Project Structure
+      - name: Compile SwiftUI iOS App
         run: |
-          mkdir -p build
-          # Generates the iOS build bundle
-          swiftc -emit-executable FinanceApp/*.swift -target arm64-apple-ios17.0-simulator -o build/FinanceApp
+          mkdir -p build/Payload
+          
+          # Find the exact iOS Simulator SDK path
+          SDK_PATH=$(xcrun --sdk iphonesimulator --show-sdk-path)
+          
+          # Compile the Swift source files into an iOS binary
+          xcrun --sdk iphonesimulator swiftc \
+            -target arm64-apple-ios17.0-simulator \
+            -sdk "$SDK_PATH" \
+            -o build/FinanceApp \
+            $(find . -name "*.swift" -not -path "*/.*")
+          
+          # Create an app bundle structure
+          mkdir -p build/Payload/FinanceApp.app
+          cp build/FinanceApp build/Payload/FinanceApp.app/
+          
+          # Package into a zip
+          cd build
+          zip -r FinanceApp-iOS.zip Payload/
 
-      - name: Upload Build Artifact
+      - name: Upload iOS App Build
         uses: actions/upload-artifact@v4
         with:
-          name: iOS-FinanceApp-Build
-          path: build/
+          name: FinanceApp-iOS-Build
+          path: build/FinanceApp-iOS.zip
